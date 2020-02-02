@@ -8,7 +8,7 @@ include_directories(src/utils)
 
 set(CMAKE_CXX_STANDARD 14)
 
-set(LIBMEMC true)
+#set(LIBMEMC true)
 
 if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
     enable_testing()
@@ -74,12 +74,12 @@ if (LIBMEMC)
         target_link_libraries(${CMAKE_PROJECT_NAME}_${exename}${ARTIFACT_SUFFIX} ${ATOMIC} ${LIBMC} ${PTHREAD})
     endforeach (sourcefile ${MC_TESTS_EXES})
 else ()
-    set(STANDALONE 0)
+    set(STANDALONE 1)
     include_directories(src/memcached)
     include_directories(/usr/include/sasl)
     #include_directories(/usr/include/event2)
 
-    set(LIBSASL -lsasl2)
+    #set(LIBSASL -lsasl2)
     set(LIBEVENT -levent)
 
     set(CMAKE_CXX_FLAGS "-DHAVE_CONFIG_H ${CMAKE_CXX_FLAGS}")
@@ -133,6 +133,6 @@ else ()
                 EXCLUDE_FROM_DEFAULT_BUILD_RELWITHDEBINFO 1
                 OUTPUT_NAME ${exename}${ARTIFACT_SUFFIX}
                 )
-        target_link_libraries(${CMAKE_PROJECT_NAME}_${exename}${ARTIFACT_SUFFIX} ${ATOMIC} ${PTHREAD} ${LIBEVENT} ${LIBSASL})
+        target_link_libraries(${CMAKE_PROJECT_NAME}_${exename}${ARTIFACT_SUFFIX} ${ATOMIC} ${PTHREAD} ${LIBEVENT})# ${LIBSASL})
     endforeach (sourcefile ${MEMC_TEST_EXES})
 endif ()
