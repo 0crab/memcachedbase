@@ -14,7 +14,21 @@
  *      Brad Fitzpatrick <brad@danga.com>
  */
 #include "memcached.h"
-
+/* Time measurement module */
+#include <sys/time.h>
+#include <stdio.h>
+#define DATA_NUM 1000000
+struct timeval startTime[4];
+uint64_t myRuntime[4];
+uint64_t getRunTime(struct timeval begTime) {
+    struct timeval endTime;
+    gettimeofday(&endTime, NULL);
+    uint64_t duration = (endTime.tv_sec - begTime.tv_sec) * 1000000 + endTime.tv_usec - begTime.tv_usec;
+    begTime = endTime;
+    return duration;
+}
+uint64_t myCount=0;
+/*module end*/
 #ifdef EXTSTORE
 #include "storage.h"
 #endif
@@ -315,7 +329,7 @@ static void settings_init(void) {
     settings.auth_file = NULL;        /* by default, not using ASCII authentication tokens */
     settings.factor = 1.25;
     settings.chunk_size = 48;         /* space for a modest key and value */
-    settings.num_threads = 4;         /* N workers */
+    settings.num_threads = 1;         /* N workers */
     settings.num_threads_per_udp = 0;
     settings.prefix_delimiter = ':';
     settings.detail_enabled = 0;
@@ -1388,8 +1402,10 @@ static void complete_nread_ascii(conn *c) {
         }
         out_string(c, "CLIENT_ERROR bad data chunk");
     } else {
+        gettimeofday(&startTime[0],NULL);
         ret = store_item(it, comm, c);
-
+        myRuntime[0]+=getRunTime(startTime[0]);
+        myCount++;
 #ifdef ENABLE_DTRACE
         uint64_t cas = ITEM_get_cas(it);
         switch (c->cmd) {
@@ -6712,7 +6728,17 @@ static void drive_machine(conn *c) {
     assert(c != NULL);
 
     while (!stop) {
-
+        if(myCount==DATA_NUM){
+            printf("%lu:\n",pthread_self());
+            for(int i=0;i<4;i++){
+                printf("time %d:%ld\n",i,myRuntime[i]);
+                fflush(stdout);
+            }
+            for(int i=0;i<4;i++){
+                myRuntime[i]=0;
+            }
+            myCount=0;
+        }
         switch (c->state) {
             case conn_listening:
                 addrlen = sizeof(addr);
@@ -8278,7 +8304,10 @@ static int _mc_meta_load_cb(const char *tag, void *ctx, void *data) {
 }
 
 #ifdef STANDALONE
+
+
 int main(int argc, char **argv) {
+
     int c;
     bool lock_memory = false;
     bool do_daemonize = false;
