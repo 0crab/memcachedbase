@@ -350,17 +350,20 @@ item *do_item_alloc(char *key, const size_t nkey, const unsigned int flags,
 }
 
 void item_free(item *it) {
-    size_t ntotal = ITEM_ntotal(it);
-    unsigned int clsid;
-    assert((it->it_flags & ITEM_LINKED) == 0);
-    assert(it != heads[it->slabs_clsid]);
-    assert(it != tails[it->slabs_clsid]);
-    assert(it->refcount == 0);
-
-    /* so slab size changer can tell later if item is already free or not */
-    clsid = ITEM_clsid(it);
-    DEBUG_REFCNT(it, 'F');
-    slabs_free(it, ntotal, clsid);
+//    size_t ntotal = ITEM_ntotal(it);
+//    unsigned int clsid;
+//    assert((it->it_flags & ITEM_LINKED) == 0);
+//    assert(it != heads[it->slabs_clsid]);
+//    assert(it != tails[it->slabs_clsid]);
+//    assert(it->refcount == 0);
+//
+//    /* so slab size changer can tell later if item is already free or not */
+//    clsid = ITEM_clsid(it);
+//    DEBUG_REFCNT(it, 'F');
+//    slabs_free(it, ntotal, clsid);
+    if(it!=NULL){
+        free(it);
+    }
 }
 
 /**
@@ -435,6 +438,7 @@ static void do_item_link_q(item *it) { /* item is the new head */
 }
 
 static void item_link_q(item *it) {
+    return ;
     pthread_mutex_lock(&lru_locks[it->slabs_clsid]);
     do_item_link_q(it);
     pthread_mutex_unlock(&lru_locks[it->slabs_clsid]);
@@ -480,6 +484,7 @@ static void do_item_unlink_q(item *it) {
 }
 
 static void item_unlink_q(item *it) {
+    return ;
     pthread_mutex_lock(&lru_locks[it->slabs_clsid]);
     do_item_unlink_q(it);
     pthread_mutex_unlock(&lru_locks[it->slabs_clsid]);

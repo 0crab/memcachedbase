@@ -641,9 +641,18 @@ void sidethread_conn_close(conn *c) {
  * Allocates a new item.
  */
 item *item_alloc(char *key, size_t nkey, int flags, rel_time_t exptime, int nbytes) {
+//    item *it;
+//    /* do_item_alloc handles its own locks */
+//    it = do_item_alloc(key, nkey, flags, exptime, nbytes);
+//    return it;
     item *it;
-    /* do_item_alloc handles its own locks */
-    it = do_item_alloc(key, nkey, flags, exptime, nbytes);
+    it=(item*)malloc(80);
+    memset(it,0,80);
+    it->nbytes=nbytes;
+    memcpy(ITEM_key(it),key,nkey);
+    it->exptime=exptime;
+    it->it_flags=flags;
+    refcount_incr(it);
     return it;
 }
 
