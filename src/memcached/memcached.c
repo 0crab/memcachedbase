@@ -5238,9 +5238,9 @@ static void process_update_command(conn *c, token_t *tokens, const size_t ntoken
     if (settings.detail_enabled) {
         stats_prefix_record_set(key, nkey);
     }
-
+    gettimeofday(&startTime[3],NULL);
     it = item_alloc(key, nkey, flags, realtime(exptime), vlen);
-
+    myRuntime[3]+=getRunTime(startTime[3]);
     if (it == 0) {
         enum store_item_type status;
         if (!item_size_ok(nkey, flags, vlen)) {
@@ -6383,6 +6383,7 @@ static int try_read_command_ascii(conn *c) {
     assert(cont <= (c->rcurr + c->rbytes));
 
     c->last_cmd_time = current_time;
+
     process_command(c, c->rcurr);
 
     c->rbytes -= (cont - c->rcurr);
@@ -6848,7 +6849,9 @@ static void drive_machine(conn *c) {
                 break;
 
             case conn_read:
+                gettimeofday(&startTime[1],NULL);
                 res = IS_UDP(c->transport) ? try_read_udp(c) : try_read_network(c);
+                myRuntime[1]+=getRunTime(startTime[1]);
 
                 switch (res) {
                     case READ_NO_DATA_RECEIVED:
@@ -6867,11 +6870,12 @@ static void drive_machine(conn *c) {
                 break;
 
             case conn_parse_cmd :
+                gettimeofday(&startTime[2],NULL);
                 if (c->try_read_command(c) == 0) {
                     /* wee need more data! */
                     conn_set_state(c, conn_waiting);
                 }
-
+                myRuntime[2]+=getRunTime(startTime[2]);
                 break;
 
             case conn_new_cmd:
