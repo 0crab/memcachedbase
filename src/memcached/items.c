@@ -255,6 +255,7 @@ item *do_item_alloc(char *key, const size_t nkey, const unsigned int flags,
     memset(it,0,80);
     it->nbytes=nbytes;
     memcpy(ITEM_key(it),key,nkey);
+    it->nkey=nkey;
     it->exptime=exptime;
     it->it_flags=flags;
     refcount_incr(it);
