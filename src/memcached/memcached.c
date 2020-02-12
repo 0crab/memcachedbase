@@ -80,6 +80,9 @@
 #endif
 #endif
 #endif
+int fdlist[40];
+int total_fd=0;
+pthread_mutex_t my_lock;
 
 /*
  * forward declarations
@@ -6463,6 +6466,27 @@ static enum try_read_result try_read_network(conn *c) {
         }
 
         int avail = c->rsize - c->rbytes;
+
+        pthread_mutex_lock(&my_lock);
+        int tmp_fd=c->sfd;
+        bool inlist=false;
+        for(int i=0;i<total_fd;i++){
+            if(tmp_fd==fdlist[i]){
+                inlist=true;break;
+            }
+        }
+        if(!inlist){
+            printf("fd:%d\n",tmp_fd);
+            fflush(stdout);
+            if(total_fd>=40){
+                printf("too many fd\n");
+                fflush(stdout);
+            }else{
+                fdlist[total_fd++]=tmp_fd;
+            }
+        }
+        pthread_mutex_unlock(&my_lock);
+
         res = c->read(c, c->rbuf + c->rbytes, avail);
         if (res > 0) {
             pthread_mutex_lock(&c->thread->stats.mutex);
