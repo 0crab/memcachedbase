@@ -85,6 +85,19 @@ int fdlist[40];
 int total_fd=0;
 pthread_mutex_t my_lock;
 */
+struct thread_fd{
+    unsigned long threadId;
+    int fd;
+};
+struct thread_fd testList[40];
+
+bool thread_fd_equal(unsigned long threadId,int fd, struct thread_fd tf){
+    return (threadId==tf.threadId)&&(fd==tf.fd);
+}
+pthread_mutex_t my_lock;
+int total_th;
+bool multi=false;
+
 /*
  * forward declarations
  */
@@ -6467,27 +6480,7 @@ static enum try_read_result try_read_network(conn *c) {
         }
 
         int avail = c->rsize - c->rbytes;
-        /*
-        pthread_mutex_lock(&my_lock);
-        int tmp_fd=c->sfd;
-        bool inlist=false;
-        for(int i=0;i<total_fd;i++){
-            if(tmp_fd==fdlist[i]){
-                inlist=true;break;
-            }
-        }
-        if(!inlist){
-            printf("fd:%d\n",tmp_fd);
-            fflush(stdout);
-            if(total_fd>=40){
-                printf("too many fd\n");
-                fflush(stdout);
-            }else{
-                fdlist[total_fd++]=tmp_fd;
-            }
-        }
-        pthread_mutex_unlock(&my_lock);
-        */
+
         res = c->read(c, c->rbuf + c->rbytes, avail);
         if (res > 0) {
             pthread_mutex_lock(&c->thread->stats.mutex);
@@ -6848,7 +6841,36 @@ static void drive_machine(conn *c) {
                 break;
 
             case conn_read:
-                printf("%lu\treading network %d\n",pthread_self(),c->sfd);
+                pthread_mutex_lock(&my_lock);
+                unsigned long mythread=pthread_self();
+                int myfd=c->sfd;
+                bool inlist=false;
+                for(int i=0;i<total_th&&!multi;i++){
+                    if(mythread==testList[i].threadId&&myfd==testList[i].fd){
+                        inlist=true;
+                        break;
+                    }else if(!(mythread!=testList[i].threadId&&myfd!=testList[i].fd)){
+                        printf("multi used\n");
+                        fflush(stdout);
+                        multi=true;
+                        break;
+                    }
+                }
+                if(!multi&&!inlist){
+                    printf("thread:%lu\tfd:%d\n",mythread,myfd);
+                    fflush(stdout);
+                    if(total_th>=40){
+                        printf("too many item\n");
+                        fflush(stdout);
+                    }else{
+                        struct thread_fd tmp;
+                        tmp.threadId=mythread;
+                        tmp.fd=myfd;
+                        testList[total_th++]=tmp;
+                    }
+                }
+
+                pthread_mutex_lock(&my_lock);
                 res = IS_UDP(c->transport) ? try_read_udp(c) : try_read_network(c);
 
                 switch (res) {
