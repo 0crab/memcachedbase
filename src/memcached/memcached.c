@@ -6786,7 +6786,7 @@ static void drive_machine(conn *c) {
     assert(c != NULL);
 
     while (!stop) {
-        if(myCount==DATA_NUM){
+        if(myCount==DATA_NUM*THREAD_NUM){
             show_test_time();
             __sync_fetch_and_and(&myCount,0);
         }
