@@ -17,9 +17,16 @@
 /* Time measurement module */
 #include <sys/time.h>
 #include <stdio.h>
+#include <pthread.h>
 #define DATA_NUM 1000000
-struct timeval startTime[4];
-uint64_t myRuntime[4];
+#define THREAD_NUM 1
+struct timeval startTime[4][THREAD_NUM];
+uint64_t myRuntime[4][THREAD_NUM];
+int myTable[THREAD_NUM];
+int fd_num;
+
+uint64_t myCount=0;
+
 uint64_t getRunTime(struct timeval begTime) {
     struct timeval endTime;
     gettimeofday(&endTime, NULL);
@@ -27,7 +34,57 @@ uint64_t getRunTime(struct timeval begTime) {
     begTime = endTime;
     return duration;
 }
-uint64_t myCount=0;
+int get_index(int fd){
+    for(int i=0;i<fd_num;i++){
+        if(fd==myTable[i]){
+            return i;
+        }
+    }
+    if(fd_num<THREAD_NUM){
+        myTable[fd_num++]=fd;
+        return fd_num-1;
+    }
+    printf("error:too many fd\n");
+    fflush(stdout);
+    return -1;
+}
+void get_start_time(int time_index,int fd){
+    int index=get_index(fd);
+    if(index==-1){
+        printf("index error\n");
+        fflush(stdout);
+    }
+    gettimeofday(&startTime[time_index][index],NULL);
+}
+void get_run_time(int time_index,int fd){
+    int index=get_index(fd);
+    if(index==-1){
+        printf("index error\n");
+        fflush(stdout);
+    }
+    myRuntime[time_index][index]+=getRunTime(startTime[time_index][index]);
+}
+
+void show_test_time(){
+    printf("--------------\n");
+    fflush(stdout);
+    uint64_t time[4];
+    for(int i=0;i<4;i++) time[i]=0;
+    for(int i=0;i<4;i++){
+        for(int j=0;j<THREAD_NUM;j++){
+            time[i]+=myRuntime[i][j];
+        }
+        time[i]/=THREAD_NUM;
+        printf("time %d :%lu\n",i,time[i]);
+        fflush(stdout);
+    }
+    for(int i=0;i<4;i++){
+        for(int j=0;j<THREAD_NUM;j++){
+            myRuntime[i][j]=0;
+        }
+    }
+}
+
 /*module end*/
 #ifdef EXTSTORE
 #include "storage.h"
@@ -1402,10 +1459,10 @@ static void complete_nread_ascii(conn *c) {
         }
         out_string(c, "CLIENT_ERROR bad data chunk");
     } else {
-        gettimeofday(&startTime[0],NULL);
+        get_start_time(0,c->sfd);
         ret = store_item(it, comm, c);
-        myRuntime[0]+=getRunTime(startTime[0]);
-        myCount++;
+        get_run_time(0,c->sfd);
+        __sync_fetch_and_add(&myCount,1);
 #ifdef ENABLE_DTRACE
         uint64_t cas = ITEM_get_cas(it);
         switch (c->cmd) {
@@ -5238,9 +5295,9 @@ static void process_update_command(conn *c, token_t *tokens, const size_t ntoken
     if (settings.detail_enabled) {
         stats_prefix_record_set(key, nkey);
     }
-    gettimeofday(&startTime[3],NULL);
+    get_start_time(3,c->sfd);
     it = item_alloc(key, nkey, flags, realtime(exptime), vlen);
-    myRuntime[3]+=getRunTime(startTime[3]);
+    get_run_time(3,c->sfd);
     if (it == 0) {
         enum store_item_type status;
         if (!item_size_ok(nkey, flags, vlen)) {
@@ -6730,15 +6787,8 @@ static void drive_machine(conn *c) {
 
     while (!stop) {
         if(myCount==DATA_NUM){
-            printf("%lu:\n",pthread_self());
-            for(int i=0;i<4;i++){
-                printf("time %d:%ld\n",i,myRuntime[i]);
-                fflush(stdout);
-            }
-            for(int i=0;i<4;i++){
-                myRuntime[i]=0;
-            }
-            myCount=0;
+            show_test_time();
+            __sync_fetch_and_and(&myCount,0);
         }
         switch (c->state) {
             case conn_listening:
@@ -6849,9 +6899,9 @@ static void drive_machine(conn *c) {
                 break;
 
             case conn_read:
-                gettimeofday(&startTime[1],NULL);
+                get_start_time(1,c->sfd);
                 res = IS_UDP(c->transport) ? try_read_udp(c) : try_read_network(c);
-                myRuntime[1]+=getRunTime(startTime[1]);
+                get_run_time(1,c->sfd);
 
                 switch (res) {
                     case READ_NO_DATA_RECEIVED:
@@ -6870,12 +6920,12 @@ static void drive_machine(conn *c) {
                 break;
 
             case conn_parse_cmd :
-                gettimeofday(&startTime[2],NULL);
+                get_start_time(2,c->sfd);
                 if (c->try_read_command(c) == 0) {
                     /* wee need more data! */
                     conn_set_state(c, conn_waiting);
                 }
-                myRuntime[2]+=getRunTime(startTime[2]);
+                get_run_time(2,c->sfd);
                 break;
 
             case conn_new_cmd:
