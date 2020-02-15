@@ -80,10 +80,11 @@
 #endif
 #endif
 #endif
+/*
 int fdlist[40];
 int total_fd=0;
 pthread_mutex_t my_lock;
-
+*/
 /*
  * forward declarations
  */
@@ -6466,7 +6467,7 @@ static enum try_read_result try_read_network(conn *c) {
         }
 
         int avail = c->rsize - c->rbytes;
-
+        /*
         pthread_mutex_lock(&my_lock);
         int tmp_fd=c->sfd;
         bool inlist=false;
@@ -6486,7 +6487,7 @@ static enum try_read_result try_read_network(conn *c) {
             }
         }
         pthread_mutex_unlock(&my_lock);
-
+        */
         res = c->read(c, c->rbuf + c->rbytes, avail);
         if (res > 0) {
             pthread_mutex_lock(&c->thread->stats.mutex);
@@ -6739,6 +6740,7 @@ static void drive_machine(conn *c) {
 
         switch (c->state) {
             case conn_listening:
+                printf("%lu\tlistening...\n",pthread_self());
                 addrlen = sizeof(addr);
 #ifdef HAVE_ACCEPT4
                 if (use_accept4) {
@@ -6846,6 +6848,7 @@ static void drive_machine(conn *c) {
                 break;
 
             case conn_read:
+                printf("%lu\treading network %d\n",pthread_self(),c->sfd);
                 res = IS_UDP(c->transport) ? try_read_udp(c) : try_read_network(c);
 
                 switch (res) {
