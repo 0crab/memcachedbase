@@ -6870,7 +6870,7 @@ static void drive_machine(conn *c) {
                     }
                 }
 
-                pthread_mutex_lock(&my_lock);
+                pthread_mutex_unlock(&my_lock);
                 res = IS_UDP(c->transport) ? try_read_udp(c) : try_read_network(c);
 
                 switch (res) {
