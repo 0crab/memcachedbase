@@ -5321,8 +5321,18 @@ static void process_update_command(conn *c, token_t *tokens, const size_t ntoken
         stats_prefix_record_set(key, nkey);
     }
     get_start_time(3,c->sfd);
-    it = item_alloc(key, nkey, flags, realtime(exptime), vlen);
+    //it = item_alloc(key, nkey, flags, realtime(exptime), vlen);
+    //item *it;
+    it=(item*)malloc(80);
+    memset(it,0,80);
+    it->nbytes=vlen;
+    memcpy(ITEM_key(it),key,nkey);
+    it->nkey=nkey;
+    it->exptime=exptime;
+    it->it_flags=flags;
+    refcount_incr(it);
     get_run_time(3,c->sfd);
+
     if (it == 0) {
         enum store_item_type status;
         if (!item_size_ok(nkey, flags, vlen)) {
