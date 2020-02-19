@@ -20,11 +20,17 @@
 #include <pthread.h>
 #define DATA_NUM 1000000
 #define THREAD_NUM 1
-struct timeval startTime[4][THREAD_NUM];
-uint64_t myRuntime[4][THREAD_NUM];
-int myTable[THREAD_NUM];
+#define INDEX_HASH_SIZE 100
+
+struct myHashItem{
+    int fd;
+    int index;
+};
+struct myHashItem indexHashTable[INDEX_HASH_SIZE];
 int fd_num;
 
+struct timeval startTime[4][THREAD_NUM];
+uint64_t myRuntime[4][THREAD_NUM];
 uint64_t myCount=0;
 
 uint64_t getRunTime(struct timeval begTime) {
@@ -34,19 +40,38 @@ uint64_t getRunTime(struct timeval begTime) {
     begTime = endTime;
     return duration;
 }
+
+int get_index_from_hashtable(int fd){
+    int i=fd%INDEX_HASH_SIZE;
+    while (indexHashTable[i].fd!=0&&indexHashTable[i].fd!=fd){
+        i=(i+1)%INDEX_HASH_SIZE;
+    }
+    if(indexHashTable[i].fd==0) return -1;
+    else    return indexHashTable[i].index;
+}
+//verify that fd is not in indexHashTable before calling
+int insert_index_to_hashtable(int fd,int index){
+    int i=fd%INDEX_HASH_SIZE;
+    while (indexHashTable[i].fd!=0){
+        i=(i+1)%INDEX_HASH_SIZE;
+    }
+    indexHashTable[i].fd=fd;
+    indexHashTable[i].index=index;
+}
+
 int get_index(int fd){
-    for(int i=0;i<fd_num;i++){
-        if(fd==myTable[i]){
-            return i;
+    int index=get_index_from_hashtable(fd);
+    if(index==-1){
+        if(fd_num>=THREAD_NUM){
+            printf("error:too many fd\n");
+            return -1;
+        }else{
+            insert_index_to_hashtable(fd,fd_num++);
+            return fd_num-1;
         }
+    }else{
+        return index;
     }
-    if(fd_num<THREAD_NUM){
-        myTable[fd_num++]=fd;
-        return fd_num-1;
-    }
-    printf("error:too many fd\n");
-    fflush(stdout);
-    return -1;
 }
 void get_start_time(int time_index,int fd){
     int index=get_index(fd);
