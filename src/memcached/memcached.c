@@ -1484,10 +1484,10 @@ static void complete_nread_ascii(conn *c) {
         }
         out_string(c, "CLIENT_ERROR bad data chunk");
     } else {
-        get_start_time(0,c->sfd);
+        //get_start_time(0,c->sfd);
         ret = store_item(it, comm, c);
-        get_run_time(0,c->sfd);
-        __sync_fetch_and_add(&myCount,1);
+        //get_run_time(0,c->sfd);
+        //__sync_fetch_and_add(&myCount,1);
 #ifdef ENABLE_DTRACE
         uint64_t cas = ITEM_get_cas(it);
         switch (c->cmd) {
@@ -5320,9 +5320,9 @@ static void process_update_command(conn *c, token_t *tokens, const size_t ntoken
     if (settings.detail_enabled) {
         stats_prefix_record_set(key, nkey);
     }
-    get_start_time(3,c->sfd);
+    //get_start_time(3,c->sfd);
     it = item_alloc(key, nkey, flags, realtime(exptime), vlen);
-    get_run_time(3,c->sfd);
+    //get_run_time(3,c->sfd);
     if (it == 0) {
         enum store_item_type status;
         if (!item_size_ok(nkey, flags, vlen)) {
@@ -6810,11 +6810,11 @@ static void drive_machine(conn *c) {
 
     assert(c != NULL);
 
-    while (!stop) {
+    while (!stop) {/*
         if(myCount==DATA_NUM*THREAD_NUM){
             show_test_time();
             __sync_fetch_and_and(&myCount,0);
-        }
+        }*/
         switch (c->state) {
             case conn_listening:
                 addrlen = sizeof(addr);
@@ -6924,9 +6924,9 @@ static void drive_machine(conn *c) {
                 break;
 
             case conn_read:
-                get_start_time(1,c->sfd);
+                //get_start_time(1,c->sfd);
                 res = IS_UDP(c->transport) ? try_read_udp(c) : try_read_network(c);
-                get_run_time(1,c->sfd);
+                //get_run_time(1,c->sfd);
 
                 switch (res) {
                     case READ_NO_DATA_RECEIVED:
@@ -6945,12 +6945,12 @@ static void drive_machine(conn *c) {
                 break;
 
             case conn_parse_cmd :
-                get_start_time(2,c->sfd);
+                //get_start_time(2,c->sfd);
                 if (c->try_read_command(c) == 0) {
                     /* wee need more data! */
                     conn_set_state(c, conn_waiting);
                 }
-                get_run_time(2,c->sfd);
+                //get_run_time(2,c->sfd);
                 break;
 
             case conn_new_cmd:
