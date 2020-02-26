@@ -110,6 +110,8 @@ void show_test_time(){
     }
 }
 
+
+
 /*module end*/
 #ifdef EXTSTORE
 #include "storage.h"
@@ -126,6 +128,7 @@ void show_test_time(){
 #include <sys/uio.h>
 #include <ctype.h>
 #include <stdarg.h>
+
 
 /* some POSIX systems need the following definition
  * to get mlockall flags out of sys/mman.h.  */
@@ -8385,7 +8388,7 @@ static int _mc_meta_load_cb(const char *tag, void *ctx, void *data) {
 #ifdef STANDALONE
 
 
-int main(int argc, char **argv) {
+int  main(int argc, char **argv) {
 
     int c;
     bool lock_memory = false;
@@ -9702,7 +9705,8 @@ int main(int argc, char **argv) {
     // We override the hash table start argument with what was live
     // previously, to avoid filling a huge set of items into a tiny hash
     // table.
-    assoc_init(settings.hashpower_init);
+    //assoc_init(settings.hashpower_init);
+    cuckoo_init();
 #ifdef EXTSTORE
     if (storage_file && reuse_mem) {
         fprintf(stderr, "[restart] memory restart with extstore not presently supported.\n");

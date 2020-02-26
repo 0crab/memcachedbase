@@ -751,6 +751,7 @@ enum delta_result_type add_delta(conn *c, const char *key,
  * Stores an item in the cache (high level, obeys set/add/replace semantics)
  */
 enum store_item_type store_item(item *item, int comm, conn* c) {
+
     enum store_item_type ret;
     uint32_t hv;
 

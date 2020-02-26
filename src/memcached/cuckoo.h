@@ -1,0 +1,9 @@
+
+void cuckoo_init();
+
+item * cuckoo_find(uint64_t *key);
+
+int cuckoo_insert(item *item);
+
+void cuckoo_delete(uint64_t *key);
+

@@ -401,8 +401,8 @@ void do_item_link_fixup(item *it) {
     item **head, **tail;
     int ntotal = ITEM_ntotal(it);
     uint32_t hv = hash(ITEM_key(it), it->nkey);
-    assoc_insert(it, hv);
-
+    //assoc_insert(it, hv);
+    cuckoo_insert(it);
     head = &heads[it->slabs_clsid];
     tail = &tails[it->slabs_clsid];
     if (it->prev == 0 && *head == 0) *head = it;
@@ -515,7 +515,8 @@ int do_item_link(item *it, const uint32_t hv) {
     */
     /* Allocate a new CAS ID on link. */
     ITEM_set_cas(it, (settings.use_cas) ? get_cas_id() : 0);
-    assoc_insert(it, hv);
+    //assoc_insert(it, hv);
+    cuckoo_insert(it);
     item_link_q(it);
     refcount_incr(it);
     item_stats_sizes_add(it);
@@ -534,7 +535,8 @@ void do_item_unlink(item *it, const uint32_t hv) {
         STATS_UNLOCK();
         */
         item_stats_sizes_remove(it);
-        assoc_delete(ITEM_key(it), it->nkey, hv);
+        //assoc_delete(ITEM_key(it), it->nkey, hv);
+        cuckoo_delete(ITEM_key(it));
         item_unlink_q(it);
         do_item_remove(it);
     }
@@ -550,7 +552,8 @@ void do_item_unlink_nolock(item *it, const uint32_t hv) {
         stats_state.curr_items -= 1;
         STATS_UNLOCK();
         item_stats_sizes_remove(it);
-        assoc_delete(ITEM_key(it), it->nkey, hv);
+        //assoc_delete(ITEM_key(it), it->nkey, hv);
+        cuckoo_delete(ITEM_key(it));
         do_item_unlink_q(it);
         do_item_remove(it);
     }
@@ -974,7 +977,8 @@ void item_stats_sizes(ADD_STAT add_stats, void *c) {
 
 /** wrapper around assoc_find which does the lazy expiration logic */
 item *do_item_get(const char *key, const size_t nkey, const uint32_t hv, conn *c, const bool do_update) {
-    item *it = assoc_find(key, nkey, hv);
+    //item *it = assoc_find(key, nkey, hv);
+    item *it=cuckoo_find(key);
     if (it != NULL) {
         refcount_incr(it);
         /* Optimization for slab reassignment. prevents popular items from

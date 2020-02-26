@@ -39,6 +39,8 @@
 #include <openssl/ssl.h>
 #endif
 
+#include "libcuckoo_hash_table.h"
+
 /** Maximum length of a key. */
 #define KEY_MAX_LENGTH 250
 
@@ -785,6 +787,7 @@ extern int daemonize(int nochdir, int noclose);
 #include "stats.h"
 #include "slabs.h"
 #include "assoc.h"
+#include "cuckoo.h"
 #include "items.h"
 #include "crawler.h"
 #include "trace.h"

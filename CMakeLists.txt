@@ -25,6 +25,16 @@ else ()
     enable_testing()
 endif ()
 
+# Add the libcuckoo interface target
+add_subdirectory(src/libcuckoo)
+
+# Add C interface target
+add_subdirectory(src/libcuckoo-c)
+
+add_library(libcuckoo_hash_table STATIC src/memcached/libcuckoo_hash_table.cc)
+target_link_libraries(libcuckoo_hash_table libcuckoo)
+
+
 set(PTHREAD -lpthread)
 
 if (LIBMEMC)
@@ -106,6 +116,7 @@ else ()
             src/memcached/thread.c
             #src/memcached/slab_automove_extstore.c
             src/memcached/util.c
+            src/memcached/cuckoo.c
             )
 
     set(MEMC_MAIN
@@ -133,6 +144,6 @@ else ()
                 EXCLUDE_FROM_DEFAULT_BUILD_RELWITHDEBINFO 1
                 OUTPUT_NAME ${exename}${ARTIFACT_SUFFIX}
                 )
-        target_link_libraries(${CMAKE_PROJECT_NAME}_${exename}${ARTIFACT_SUFFIX} ${ATOMIC} ${PTHREAD} ${LIBEVENT})# ${LIBSASL})
+        target_link_libraries(${CMAKE_PROJECT_NAME}_${exename}${ARTIFACT_SUFFIX} ${ATOMIC} ${PTHREAD} ${LIBEVENT} libcuckoo_hash_table)# ${LIBSASL})
     endforeach (sourcefile ${MEMC_TEST_EXES})
 endif ()
