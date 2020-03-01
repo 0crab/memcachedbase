@@ -15,12 +15,20 @@ item * cuckoo_find(uint64_t *key){
     return NULL;
 }
 
-int cuckoo_insert(item *item){
-    uint64_t *key=ITEM_key(item);
-    libcuckoo_hash_table_insert(hashTable,key,&item);
+int cuckoo_insert(item *it){
+    uint64_t *key=ITEM_key(it);
+    libcuckoo_hash_table_insert(hashTable,key,&it);
     return 1;
 }
 
 void cuckoo_delete(uint64_t *key){
     libcuckoo_hash_table_erase(hashTable,key);
 }
+
+//insert :true ;assign false
+bool cuckoo_upsert(item * it){
+    uint64_t *key=ITEM_key(it);
+    return libcuckoo_hash_table_insert_or_assign(hashTable,key,&it);
+}
+
+

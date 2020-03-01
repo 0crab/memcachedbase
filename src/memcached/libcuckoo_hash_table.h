@@ -9,7 +9,6 @@
 
 #define CUCKOO_MAPPED_TYPE void *
 
-
 #include <libcuckoo-c/cuckoo_table_template.h>
 
 #endif

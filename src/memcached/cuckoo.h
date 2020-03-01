@@ -7,3 +7,5 @@ int cuckoo_insert(item *item);
 
 void cuckoo_delete(uint64_t *key);
 
+bool cuckoo_upsert(item * it);
+

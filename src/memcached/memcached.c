@@ -1889,8 +1889,7 @@ static void complete_update_bin(conn *c) {
             }
             write_bin_error(c, eno, NULL, 0);
     }
-
-    item_remove(c->item);       /* release the c->item reference */
+    //item_remove(c->item);       /* release the c->item reference */
     c->item = 0;
 }
 
@@ -3141,6 +3140,12 @@ static int _store_item_copy_data(int comm, item *old_it, item *new_it, item *add
  */
 
 enum store_item_type do_store_item(item *it, int comm, conn *c, const uint32_t hv) {
+
+    if(comm==NREAD_SET){
+        cuckoo_upsert(it);
+        return STORED;
+    }
+
     char *key = ITEM_key(it);
     item *old_it = do_item_get(key, it->nkey, hv, c, DONT_UPDATE);
     enum store_item_type stored = NOT_STORED;
