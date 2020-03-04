@@ -5920,14 +5920,7 @@ static void process_command(conn *c, char *command) {
         ((strcmp(tokens[COMMAND_TOKEN].value, "get") == 0) ||
          (strcmp(tokens[COMMAND_TOKEN].value, "bget") == 0))) {
 
-        if(!timekeeping){
-            gettimeofday(&totalStartTime,NULL);
-            timekeeping=true;
-        }else{
-            totalRuntime=getRunTime(totalStartTime);
-            printf("%lu\n",totalRuntime);
-            timekeeping=false;
-        }
+
 
         process_get_command(c, tokens, ntokens, false, false);
 
@@ -6332,6 +6325,18 @@ static int try_read_command_binary(conn *c) {
         c->opaque = c->binary_header.request.opaque;
         /* clear the returned cas value */
         c->cas = 0;
+        if(c->cmd==12){
+            if(!timekeeping){
+                gettimeofday(&totalStartTime,NULL);
+                timekeeping=true;
+            }else{
+                totalRuntime=getRunTime(totalStartTime);
+                printf("%lu\n",totalRuntime);
+                fflush(stdout);
+                timekeeping=false;
+            }
+        }
+
 
         c->last_cmd_time = current_time;
         dispatch_bin_command(c);
