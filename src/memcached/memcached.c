@@ -22,6 +22,10 @@
 #define THREAD_NUM 1
 #define INDEX_HASH_SIZE 100
 
+bool timekeeping;
+struct timeval totalStartTime;
+uint64_t totalRuntime;
+
 struct myHashItem{
     int fd;
     int index;
@@ -5915,6 +5919,15 @@ static void process_command(conn *c, char *command) {
     if (ntokens >= 3 &&
         ((strcmp(tokens[COMMAND_TOKEN].value, "get") == 0) ||
          (strcmp(tokens[COMMAND_TOKEN].value, "bget") == 0))) {
+
+        if(!timekeeping){
+            gettimeofday(&totalStartTime,NULL);
+            timekeeping=true;
+        }else{
+            totalRuntime=getRunTime(totalStartTime);
+            printf("%lu\n",totalRuntime);
+            timekeeping=false;
+        }
 
         process_get_command(c, tokens, ntokens, false, false);
 
