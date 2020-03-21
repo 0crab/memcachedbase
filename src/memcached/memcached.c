@@ -84,6 +84,8 @@
 /*
  * forward declarations
  */
+item * TEST_ITEM;
+
 static void drive_machine(conn *c);
 
 static int new_socket(struct addrinfo *ai);
@@ -1711,6 +1713,11 @@ static void complete_incr_bin(conn *c) {
 }
 
 static void complete_update_bin(conn *c) {
+    item_remove(c->item);
+    c->item=NULL;
+    conn_set_state(c,conn_new_cmd);
+    return;
+
     protocol_binary_response_status eno = PROTOCOL_BINARY_RESPONSE_EINVAL;
     enum store_item_type ret = NOT_STORED;
     assert(c != NULL);
@@ -1723,19 +1730,19 @@ static void complete_update_bin(conn *c) {
 
     /* We don't actually receive the trailing two characters in the bin
      * protocol, so we're going to just set them here */
-    if ((it->it_flags & ITEM_CHUNKED) == 0) {
-        *(ITEM_data(it) + it->nbytes - 2) = '\r';
-        *(ITEM_data(it) + it->nbytes - 1) = '\n';
-    } else {
-        assert(c->ritem);
-        item_chunk *ch = (item_chunk *) c->ritem;
-        if (ch->size == ch->used)
-            ch = ch->next;
-        assert(ch->size - ch->used >= 2);
-        ch->data[ch->used] = '\r';
-        ch->data[ch->used + 1] = '\n';
-        ch->used += 2;
-    }
+//    if ((it->it_flags & ITEM_CHUNKED) == 0) {
+//        *(ITEM_data(it) + it->nbytes - 2) = '\r';
+//        *(ITEM_data(it) + it->nbytes - 1) = '\n';
+//    } else {
+//        assert(c->ritem);
+//        item_chunk *ch = (item_chunk *) c->ritem;
+//        if (ch->size == ch->used)
+//            ch = ch->next;
+//        assert(ch->size - ch->used >= 2);
+//        ch->data[ch->used] = '\r';
+//        ch->data[ch->used + 1] = '\n';
+//        ch->used += 2;
+//    }
 
     ret = store_item(it, c->cmd, c);
 
@@ -2617,14 +2624,15 @@ static void process_bin_update(conn *c) {
 
     assert(c != NULL);
 
-    key = binary_get_key(c);
-    nkey = c->binary_header.request.keylen;
+//    key = binary_get_key(c);
+//    nkey = c->binary_header.request.keylen;
+
 
     /* fix byteorder in the request */
-    req->message.body.flags = ntohl(req->message.body.flags);
-    req->message.body.expiration = ntohl(req->message.body.expiration);
+//    req->message.body.flags = ntohl(req->message.body.flags);
+//    req->message.body.expiration = ntohl(req->message.body.expiration);
 
-    vlen = c->binary_header.request.bodylen - (nkey + c->binary_header.request.extlen);
+//    vlen = c->binary_header.request.bodylen - (nkey + c->binary_header.request.extlen);
 
     if (settings.verbose > 1) {
         int ii;
@@ -2647,8 +2655,11 @@ static void process_bin_update(conn *c) {
         stats_prefix_record_set(key, nkey);
     }
 
-    it = item_alloc(key, nkey, req->message.body.flags,
-                    realtime(req->message.body.expiration), vlen + 2);
+    uint64_t tmpkey=0;
+    nkey=8;
+    vlen=8;
+    it = item_alloc((char *)&tmpkey, 8, 0,
+                    0, 8);
 
     if (it == 0) {
         enum store_item_type status;
@@ -6896,9 +6907,9 @@ static void drive_machine(conn *c) {
                     /* first check if we have leftovers in the conn_read buffer */
                     if (c->rbytes > 0) {
                         int tocopy = c->rbytes > c->rlbytes ? c->rlbytes : c->rbytes;
-                        if (c->ritem != c->rcurr) {
-                            memmove(c->ritem, c->rcurr, tocopy);
-                        }
+//                        if (c->ritem != c->rcurr) {
+//                            memmove(c->ritem, c->rcurr, tocopy);
+//                        }
                         c->ritem += tocopy;
                         c->rlbytes -= tocopy;
                         c->rcurr += tocopy;
@@ -8279,6 +8290,9 @@ static int _mc_meta_load_cb(const char *tag, void *ctx, void *data) {
 
 #ifdef STANDALONE
 int main(int argc, char **argv) {
+    uint64_t mykey=0;
+    TEST_ITEM = item_alloc((char *)&mykey,8, 0, 0, 8);
+
     int c;
     bool lock_memory = false;
     bool do_daemonize = false;
