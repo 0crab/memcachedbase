@@ -6846,17 +6846,12 @@ static void drive_machine(conn *c) {
                 int myfd=c->sfd;
                 bool inlist=false;
                 for(int i=0;i<total_th&&!multi;i++){
-                    if(mythread==testList[i].threadId&&myfd==testList[i].fd){
-                        inlist=true;
-                        break;
-                    }else if(!(mythread!=testList[i].threadId&&myfd!=testList[i].fd)){
-                        printf("multi used\n");
-                        fflush(stdout);
-                        multi=true;
+                    if(mythread==testList[i].threadId&&myfd==testList[i].fd) {
+                        inlist = true;
                         break;
                     }
                 }
-                if(!multi&&!inlist){
+                if(!inlist){
                     printf("thread:%lu\tfd:%d\n",mythread,myfd);
                     fflush(stdout);
                     if(total_th>=40){
