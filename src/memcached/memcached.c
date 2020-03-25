@@ -84,6 +84,7 @@
 /*
  * forward declarations
  */
+uint64_t mykey=0;
 item * TEST_ITEM;
 
 static void drive_machine(conn *c);
@@ -1713,7 +1714,7 @@ static void complete_incr_bin(conn *c) {
 }
 
 static void complete_update_bin(conn *c) {
-    item_remove(c->item);
+   // item_remove(c->item);
     c->item=NULL;
     conn_set_state(c,conn_new_cmd);
     return;
@@ -2633,6 +2634,11 @@ static void process_bin_update(conn *c) {
 //    req->message.body.expiration = ntohl(req->message.body.expiration);
 
 //    vlen = c->binary_header.request.bodylen - (nkey + c->binary_header.request.extlen);
+    //uint64_t tmpkey=0;
+    nkey=8;
+    vlen=8;
+    key=(char *)&mykey;
+
 
     if (settings.verbose > 1) {
         int ii;
@@ -2655,12 +2661,9 @@ static void process_bin_update(conn *c) {
         stats_prefix_record_set(key, nkey);
     }
 
-    uint64_t tmpkey=0;
-    nkey=8;
-    vlen=8;
-    it = item_alloc((char *)&tmpkey, 8, 0,
-                    0, 8);
 
+    //it = item_alloc((char *)&tmpkey, 8, 0,  0, 8);
+    it=TEST_ITEM;
     if (it == 0) {
         enum store_item_type status;
         if (!item_size_ok(nkey, req->message.body.flags, vlen + 2)) {
@@ -2748,7 +2751,8 @@ static void process_bin_append_prepend(conn *c) {
         stats_prefix_record_set(key, nkey);
     }
 
-    it = item_alloc(key, nkey, 0, 0, vlen + 2);
+    //it = item_alloc(key, nkey, 0, 0, vlen + 2);
+    it=TEST_ITEM;
 
     if (it == 0) {
         if (!item_size_ok(nkey, 0, vlen + 2)) {
@@ -8289,9 +8293,19 @@ static int _mc_meta_load_cb(const char *tag, void *ctx, void *data) {
 }
 
 #ifdef STANDALONE
+
 int main(int argc, char **argv) {
-    uint64_t mykey=0;
-    TEST_ITEM = item_alloc((char *)&mykey,8, 0, 0, 8);
+
+    //TEST_ITEM = item_alloc((char *)&mykey,8, 0, 0, 8);
+    //item *it;
+    TEST_ITEM=(item*)malloc(80);
+    memset(TEST_ITEM,0,80);
+    TEST_ITEM->nbytes=8;
+    //memcpy(ITEM_key(it),key,nkey);
+    TEST_ITEM->nkey=8;
+    TEST_ITEM->exptime=0;
+    TEST_ITEM->it_flags=0;
+    refcount_incr(TEST_ITEM);
 
     int c;
     bool lock_memory = false;
