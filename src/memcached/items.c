@@ -23,6 +23,88 @@
 #include <unistd.h>
 #include <poll.h>
 
+#define THREAD_MAX_NUM 40
+typedef struct myHsahItem{
+    uint64_t pid;
+    int index;
+} myhashitem;
+uint64_t thread_item_counters[THREAD_MAX_NUM];
+uint64_t thread_item_bytes[THREAD_MAX_NUM];
+myhashitem myhashtable[THREAD_MAX_NUM];
+int pidnum;
+
+int get_index_from_hashtable(uint64_t pid){
+    int i=pid%THREAD_MAX_NUM;
+    while (myhashtable[i].pid!=0&&myhashtable[i].pid!=pid){
+        i=(i+1)%THREAD_MAX_NUM;
+    }
+    if(myhashtable[i].pid==0) return -1;
+    else    return myhashtable[i].index;
+}
+//verify that pid is not in indexHashTable before calling
+int insert_index_to_hashtable(uint64_t pid,int index){
+    printf("new thread %lu\n",pid);
+    fflush(stdout);
+    int i=pid%THREAD_MAX_NUM;
+    while (myhashtable[i].pid!=0){
+        i=(i+1)%THREAD_MAX_NUM;
+    }
+    myhashtable[i].pid=pid;
+    myhashtable[i].index=index;
+}
+
+int get_index(uint64_t pid) {
+    int index = get_index_from_hashtable(pid);
+    if (index == -1) {
+        if (pidnum >= settings.num_threads) {
+            printf("error:too many pid\n");
+            return -1;
+        } else {
+            insert_index_to_hashtable(pid, pidnum++);
+            return pidnum - 1;
+        }
+    } else {
+        return index;
+    }
+}
+
+#define COUNT_CYCLE 1000
+static void local_statistic_item_add(item* it){
+    uint64_t p=pthread_self();
+    int index=get_index(p);
+    uint64_t *localbytes=&thread_item_bytes[index];
+    uint64_t *localcount=&thread_item_counters[index];
+
+    *localbytes+=ITEM_ntotal(it);
+    if(++(*localcount)>=COUNT_CYCLE){
+        STATS_LOCK();
+        stats_state.curr_bytes += *localbytes;
+        stats_state.curr_items += COUNT_CYCLE;
+        stats.total_items += COUNT_CYCLE;
+        STATS_UNLOCK();
+        *localcount=0;
+    }
+}
+
+static void local_statistic_item_sub(item* it){
+    int index=get_index(pthread_self());
+    uint64_t *localbytes=&thread_item_bytes[index];
+    uint64_t *localcount=&thread_item_counters[index];
+
+    *localbytes-=ITEM_ntotal(it);
+    if(--(*localcount)<=0){
+        STATS_LOCK();
+        stats_state.curr_bytes -= *localbytes;
+        stats_state.curr_items -= COUNT_CYCLE;
+        stats.total_items -= COUNT_CYCLE;
+        STATS_UNLOCK();
+        *localcount=COUNT_CYCLE-1;
+    }
+}
+
+
+
+
 /* Forward Declarations */
 static void item_link_q(item *it);
 
@@ -506,6 +588,7 @@ int do_item_link(item *it, const uint32_t hv) {
     assert((it->it_flags & (ITEM_LINKED | ITEM_SLABBED)) == 0);
     it->it_flags |= ITEM_LINKED;
     it->time = current_time;
+    local_statistic_item_add(it);
     /*
     STATS_LOCK();
     stats_state.curr_bytes += ITEM_ntotal(it);
@@ -527,6 +610,7 @@ void do_item_unlink(item *it, const uint32_t hv) {
     MEMCACHED_ITEM_UNLINK(ITEM_key(it), it->nkey, it->nbytes);
     if ((it->it_flags & ITEM_LINKED) != 0) {
         it->it_flags &= ~ITEM_LINKED;
+        local_statistic_item_sub(it);
         /*
         STATS_LOCK();
         stats_state.curr_bytes -= ITEM_ntotal(it);
