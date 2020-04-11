@@ -918,6 +918,8 @@ void memcached_thread_init(int nthreads, void *arg) {
         stats_state.reserved_fds += 5;
         threads[i].local_item_count=0;
         threads[i].local_bytes=0;
+        bufqueue_init(&threads[i].bufqueue);
+
     }
 
     /* Create threads after we've done all the libevent setup. */

@@ -290,8 +290,10 @@ item_chunk *do_item_alloc_chunk(item_chunk *ch, const size_t bytes_remain) {
 item *do_item_alloc(char *key, const size_t nkey, const unsigned int flags,
                     const rel_time_t exptime, const int nbytes) {
     item *it;
-    it=(item*)malloc(80);
+//    it=(item*)malloc(80);
+    it=bufqueue_allocate(threads[thread_index].bufqueue,80);
     memset(it,0,80);
+
     it->nbytes=nbytes;
     memcpy(ITEM_key(it),key,nkey);
     it->nkey=nkey;
@@ -412,7 +414,8 @@ void item_free(item *it) {
 //    DEBUG_REFCNT(it, 'F');
 //    slabs_free(it, ntotal, clsid);
     if(it!=NULL){
-        free(it);
+        //free(it);
+        bufqueue_free(threads[thread_index].bufqueue,it,ITEM_ntotal(it));
     }
 }
 

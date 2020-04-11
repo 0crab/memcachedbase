@@ -106,6 +106,7 @@ else ()
             src/memcached/thread.c
             #src/memcached/slab_automove_extstore.c
             src/memcached/util.c
+            src/memcached/bufqueue.c
             )
 
     set(MEMC_MAIN

@@ -34,6 +34,7 @@
 #endif
 
 #include "sasl_defs.h"
+#include "bufqueue.h"
 
 #ifdef TLS
 #include <openssl/ssl.h>
@@ -600,6 +601,7 @@ typedef struct {
 #endif
     uint64_t local_item_count;
     uint64_t local_bytes;
+    struct queue_class * bufqueue;
 } LIBEVENT_THREAD;
 typedef struct conn conn;
 #ifdef EXTSTORE
@@ -791,6 +793,7 @@ extern int daemonize(int nochdir, int noclose);
 #include "trace.h"
 #include "hash.h"
 #include "util.h"
+#include "bufqueue.h"
 
 /*
  * Functions such as the libevent-related calls that need to do cross-thread
