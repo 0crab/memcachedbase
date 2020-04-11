@@ -598,7 +598,8 @@ typedef struct {
 #ifdef TLS
     char   *ssl_wbuf;
 #endif
-
+    uint64_t local_item_count;
+    uint64_t local_bytes;
 } LIBEVENT_THREAD;
 typedef struct conn conn;
 #ifdef EXTSTORE
@@ -893,3 +894,5 @@ extern void drop_worker_privileges(void);
 
 #define likely(x)       __builtin_expect((x),1)
 #define unlikely(x)     __builtin_expect((x),0)
+
+

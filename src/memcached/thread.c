@@ -80,7 +80,7 @@ unsigned int item_lock_hashpower;
  * Each libevent instance has a wakeup pipe, which other threads
  * can use to signal that they've put a new connection on its queue.
  */
-static LIBEVENT_THREAD *threads;
+LIBEVENT_THREAD *threads;
 
 /*
  * Number of worker threads that have finished setting themselves up.
@@ -434,8 +434,11 @@ static void setup_thread(LIBEVENT_THREAD *me) {
 /*
  * Worker thread: main event loop
  */
+__thread int thread_index;
+
 static void *worker_libevent(void *arg) {
     LIBEVENT_THREAD *me = arg;
+    thread_index=me-threads;
 
     /* Any per-thread setup can happen here; memcached_thread_init() will block until
      * all threads have finished initializing.
@@ -913,6 +916,8 @@ void memcached_thread_init(int nthreads, void *arg) {
         setup_thread(&threads[i]);
         /* Reserve three fds for the libevent base, and two for the pipe */
         stats_state.reserved_fds += 5;
+        threads[i].local_item_count=0;
+        threads[i].local_bytes=0;
     }
 
     /* Create threads after we've done all the libevent setup. */

@@ -23,6 +23,45 @@
 #include <unistd.h>
 #include <poll.h>
 
+extern LIBEVENT_THREAD * threads;
+extern __thread int thread_index;
+//extern thread_index;
+#define COUNT_CYCLE 1000
+static void local_statistic_item_add(item* it){
+    uint64_t *localbytes=&threads[thread_index].local_bytes;
+    uint64_t *localcount=&threads[thread_index].local_item_count;
+    printf("%d\n",thread_index);
+
+    *localbytes+=ITEM_ntotal(it);
+    if(++(*localcount)>=COUNT_CYCLE){
+        STATS_LOCK();
+        stats_state.curr_bytes += *localbytes;
+        stats_state.curr_items += COUNT_CYCLE;
+        stats.total_items += COUNT_CYCLE;
+        STATS_UNLOCK();
+        *localcount=0;
+    }
+}
+
+static void local_statistic_item_sub(item* it){
+    uint64_t *localbytes=&threads[thread_index].local_bytes;
+    uint64_t *localcount=&threads[thread_index].local_item_count;
+
+    *localbytes-=ITEM_ntotal(it);
+    if(--(*localcount)<=0){
+        STATS_LOCK();
+        stats_state.curr_bytes -= *localbytes;
+        stats_state.curr_items -= COUNT_CYCLE;
+        stats.total_items -= COUNT_CYCLE;
+        STATS_UNLOCK();
+        *localcount=COUNT_CYCLE-1;
+    }
+}
+
+
+
+
+
 /* Forward Declarations */
 static void item_link_q(item *it);
 
@@ -506,6 +545,7 @@ int do_item_link(item *it, const uint32_t hv) {
     assert((it->it_flags & (ITEM_LINKED | ITEM_SLABBED)) == 0);
     it->it_flags |= ITEM_LINKED;
     it->time = current_time;
+    local_statistic_item_add(it);
     /*
     STATS_LOCK();
     stats_state.curr_bytes += ITEM_ntotal(it);
@@ -527,6 +567,7 @@ void do_item_unlink(item *it, const uint32_t hv) {
     MEMCACHED_ITEM_UNLINK(ITEM_key(it), it->nkey, it->nbytes);
     if ((it->it_flags & ITEM_LINKED) != 0) {
         it->it_flags &= ~ITEM_LINKED;
+        local_statistic_item_sub(it);
         /*
         STATS_LOCK();
         stats_state.curr_bytes -= ITEM_ntotal(it);
