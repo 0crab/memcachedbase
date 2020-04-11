@@ -30,7 +30,7 @@ extern __thread int thread_index;
 static void local_statistic_item_add(item* it){
     uint64_t *localbytes=&threads[thread_index].local_bytes;
     uint64_t *localcount=&threads[thread_index].local_item_count;
-    printf("%d\n",thread_index);
+    //printf("%d\n",thread_index);
 
     *localbytes+=ITEM_ntotal(it);
     if(++(*localcount)>=COUNT_CYCLE){
