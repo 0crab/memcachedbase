@@ -656,9 +656,9 @@ item *item_get(const char *key, const size_t nkey, conn *c, const bool do_update
     item *it;
     uint32_t hv;
     hv = hash(key, nkey);
-    item_lock(hv);
+    //item_lock(hv);
     it = do_item_get(key, nkey, hv, c, do_update);
-    item_unlock(hv);
+    //item_unlock(hv);
     return it;
 }
 
