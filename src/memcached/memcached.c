@@ -961,7 +961,7 @@ static void conn_release_items(conn *c) {
     assert(c != NULL);
 
     if (c->item) {
-        item_remove(c->item);
+   //     item_remove(c->item);
         c->item = 0;
     }
 

@@ -980,7 +980,7 @@ item *do_item_get(const char *key, const size_t nkey, const uint32_t hv, conn *c
     //item *it = assoc_find(key, nkey, hv);
     item *it=cuckoo_find(key);
     if (it != NULL) {
-        refcount_incr(it);
+        //refcount_incr(it);
         /* Optimization for slab reassignment. prevents popular items from
          * jamming in busy wait. Can only do this here to satisfy lock order
          * of item_lock, slabs_lock. */
